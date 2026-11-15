@@ -1,0 +1,5 @@
+{
+	"default": {
+		"oci-image": "psychomantys/hermes-agent"
+	}
+}

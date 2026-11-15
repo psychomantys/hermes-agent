@@ -4,7 +4,7 @@ services:
       context: .
       args:
         HERMES_TAG: latest
-    image: psycho_mantys/hermes-agent:latest
+    image: psychomantys/hermes-agent:latest
     container_name: hermes
     restart: unless-stopped
     command: gateway run

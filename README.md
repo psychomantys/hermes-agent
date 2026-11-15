@@ -69,3 +69,10 @@ The Whisper model downloads on first use (~150 MB for `base`).
 
 CLI pins are `ARG`s in the `Dockerfile` (`YQ_VERSION`, `HELM_VERSION`, …).
 Bump them there when you want newer releases.
+
+## CI
+
+Push events on this Bitbucket repo trigger the cluster `build-dockerfile` Argo Workflow
+(via `kubernetes-manifests/bitbucket/psychomantys.xyz`). Image config lives in `.ci/build.json`
+and publishes to `docker.io/psychomantys/hermes-agent`.
+
