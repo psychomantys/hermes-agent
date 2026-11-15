@@ -1,0 +1,19 @@
+services:
+  hermes:
+    build:
+      context: .
+      args:
+        HERMES_TAG: latest
+    image: psycho_mantys/hermes-agent:latest
+    container_name: hermes
+    restart: unless-stopped
+    command: gateway run
+    ports:
+      - "8642:8642"
+      - "9119:9119"
+    volumes:
+      - ${HERMES_DATA:-~/.hermes}:/opt/data
+    environment:
+      - HERMES_DASHBOARD=1
+      # Optional: Cursor API key for DirectSDK / Agent CLI auth without browser
+      # - CURSOR_API_KEY=${CURSOR_API_KEY}

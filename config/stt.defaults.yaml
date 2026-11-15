@@ -1,0 +1,6 @@
+# Applied on first boot when $HERMES_HOME/config.yaml has no `stt:` block.
+stt:
+  enabled: true
+  provider: local
+  local:
+    model: base
