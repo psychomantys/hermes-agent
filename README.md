@@ -72,7 +72,8 @@ Bump them there when you want newer releases.
 
 ## CI
 
-Push events on this Bitbucket repo trigger the cluster `build-dockerfile` Argo Workflow
-(via `kubernetes-manifests/bitbucket/psychomantys.xyz`). Image config lives in `.ci/build.json`
-and publishes to `docker.io/psychomantys/hermes-agent`.
+Tagged releases (`v*.*.*`) build and publish multi-arch images to GHCR via
+[`.github/workflows/build.yaml`](.github/workflows/build.yaml):
+
+`ghcr.io/psychomantys/hermes-agent:<tag>`
 
