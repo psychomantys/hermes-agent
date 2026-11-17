@@ -72,6 +72,8 @@ jobs:
           docker run --rm --entrypoint '' "${IMAGE}:${GITHUB_REF_NAME}-${{ matrix.arch }}" \
             /opt/hermes/.venv/bin/python -c 'import av, faster_whisper, numpy, sounddevice; print(faster_whisper.__version__)'
           docker run --rm --entrypoint '' "${IMAGE}:${GITHUB_REF_NAME}-${{ matrix.arch }}" \
+            sh -c 'command -v python3 | grep -q /opt/hermes/.venv/bin/python3 && python3 -c "import faster_whisper"'
+          docker run --rm --entrypoint '' "${IMAGE}:${GITHUB_REF_NAME}-${{ matrix.arch }}" \
             sh -c 'command -v espeak-ng >/dev/null && ldconfig -p | grep -q libopus.so.0 && ldconfig -p | grep -q libportaudio.so'
 
   publish:

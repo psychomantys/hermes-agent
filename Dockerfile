@@ -22,10 +22,14 @@ ARG KUBECTL_VERSION=v1.31.3
 # Base image USER is root (s6 PID 1). Switch explicitly for installs, then restore.
 USER root
 
+# Keep /opt/hermes/.venv/bin ahead of /usr/local/bin. The bare
+# /usr/local/bin/python3 is the toolchain interpreter without the Hermes
+# site-packages, so putting it first makes `python3` miss faster-whisper and
+# the rest of hermes-agent[voice] in docker exec / interactive shells.
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_ROOT_USER_ACTION=ignore \
-    PATH="/opt/cursor-agent/bin:/opt/opencode/bin:/usr/local/bin:/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:${PATH}"
+    PATH="/opt/cursor-agent/bin:/opt/opencode/bin:/opt/hermes/bin:/opt/hermes/.venv/bin:/usr/local/bin:/opt/data/.local/bin:${PATH}"
 
 # Seed scripts / defaults (copied before the install RUN so chmod/install stay one layer).
 COPY docker/seed-cursor-plugins.sh /opt/hermes/docker/seed-cursor-plugins.sh
@@ -232,6 +236,11 @@ RUN --mount=type=cache,id=hermes-agent-apt-cache,target=/var/cache/apt,sharing=l
       || { echo "missing required library: libopus.so.0" >&2; exit 1; }; \
     ldconfig -p | grep -q 'libportaudio\.so' \
       || { echo "missing required library: libportaudio" >&2; exit 1; }; \
+    case "$(command -v python3)" in \
+      /opt/hermes/.venv/bin/python3) ;; \
+      *) echo "python3 must resolve to the Hermes venv, got: $(command -v python3)" >&2; exit 1 ;; \
+    esac; \
+    python3 -c "import faster_whisper; print('python3 faster-whisper OK', faster_whisper.__version__)"; \
     command -v bb >/dev/null 2>&1 || command -v bbcli >/dev/null 2>&1 \
       || { echo "missing required tool: bb/bbcli" >&2; exit 1; }; \
     command -v opencode >/dev/null 2>&1 \
