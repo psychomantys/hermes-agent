@@ -70,7 +70,9 @@ jobs:
           docker run --rm --entrypoint '' "${IMAGE}:${GITHUB_REF_NAME}-${{ matrix.arch }}" \
             sh -c 'command -v hermes >/dev/null && command -v agent >/dev/null && command -v pre-commit >/dev/null'
           docker run --rm --entrypoint '' "${IMAGE}:${GITHUB_REF_NAME}-${{ matrix.arch }}" \
-            /opt/hermes/.venv/bin/python -c 'import faster_whisper; print(faster_whisper.__version__)'
+            /opt/hermes/.venv/bin/python -c 'import av, faster_whisper, numpy, sounddevice; print(faster_whisper.__version__)'
+          docker run --rm --entrypoint '' "${IMAGE}:${GITHUB_REF_NAME}-${{ matrix.arch }}" \
+            sh -c 'command -v espeak-ng >/dev/null && ldconfig -p | grep -q libopus.so.0 && ldconfig -p | grep -q libportaudio.so'
 
   publish:
     needs: [meta, build-images]
@@ -89,6 +91,7 @@ jobs:
         run: |
           docker buildx imagetools create \
             --tag "${IMAGE}:${GITHUB_REF_NAME}" \
+            --tag "${IMAGE}:latest" \
             "${IMAGE}:${GITHUB_REF_NAME}-amd64" \
             "${IMAGE}:${GITHUB_REF_NAME}-arm64"
           digest="$(docker buildx imagetools inspect "${IMAGE}:${GITHUB_REF_NAME}" --format '{{ .Manifest.Digest }}')"

@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
-# Extended Hermes Agent image with local STT (faster-whisper), Cursor
-# integration (Agent CLI + Hermes plugins), and common DevOps CLIs.
+# Extended Hermes Agent image with voice (hermes-agent[voice] plus PortAudio,
+# ffmpeg, Opus, and espeak-ng), Cursor integration (Agent CLI + Hermes
+# plugins), and common DevOps CLIs.
 #
 # Base image is produced by:
 #   https://github.com/NousResearch/hermes-agent/blob/main/Dockerfile
@@ -28,6 +29,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Seed scripts / defaults (copied before the install RUN so chmod/install stay one layer).
 COPY docker/seed-cursor-plugins.sh /opt/hermes/docker/seed-cursor-plugins.sh
+COPY docker/install-voice-extra.py /opt/hermes/docker/install-voice-extra.py
 COPY docker/cont-init.d/03-seed-cursor-plugins /etc/cont-init.d/03-seed-cursor-plugins
 COPY config/stt.defaults.yaml /opt/hermes/bundled/stt.defaults.yaml
 
@@ -61,14 +63,15 @@ RUN --mount=type=cache,id=hermes-agent-apt-cache,target=/var/cache/apt,sharing=l
       git \
       jq \
       pre-commit \
+      portaudio19-dev \
+      ffmpeg \
+      libopus0 \
+      espeak-ng \
       ; \
-    # Prefer distro ffmpeg codecs when available; base already ships ffmpeg.
+    # Prefer distro ffmpeg codecs when available; base also ships a static ffmpeg.
     apt-get -o Acquire::Retries=3 install -y --no-install-recommends libavcodec-extra \
       || apt-get -o Acquire::Retries=3 install -y --no-install-recommends libavcodec-extra61 \
       || true; \
-    if ! command -v ffmpeg >/dev/null 2>&1; then \
-      apt-get -o Acquire::Retries=3 install -y --no-install-recommends ffmpeg; \
-    fi; \
     \
     install -d \
       /usr/local/bin \
@@ -189,15 +192,18 @@ RUN --mount=type=cache,id=hermes-agent-apt-cache,target=/var/cache/apt,sharing=l
       chmod -R a+rX /opt/cursor-agent; \
     fi; \
     \
-    # --- faster-whisper into the Hermes runtime venv (pip only, no uv) ---
+    # --- hermes-agent[voice] into the Hermes runtime venv (pip only, no uv) ---
+    # The extra is faster-whisper, av, sounddevice, and numpy. Installing the
+    # extra name re-resolves the baked dist and crashes on a direct-URL
+    # requirement, so install-voice-extra.py reads those pins from metadata.
     if [ ! -x /opt/hermes/.venv/bin/python ]; then \
       echo "Hermes venv not found at /opt/hermes/.venv" >&2; \
       exit 1; \
     fi; \
     /opt/hermes/.venv/bin/python -m ensurepip --upgrade; \
     /opt/hermes/.venv/bin/python -m pip install --no-cache-dir --upgrade pip; \
-    /opt/hermes/.venv/bin/python -m pip install --no-cache-dir faster-whisper; \
-    /opt/hermes/.venv/bin/python -c "import faster_whisper; print('faster-whisper OK', faster_whisper.__version__)"; \
+    /opt/hermes/.venv/bin/python /opt/hermes/docker/install-voice-extra.py; \
+    /opt/hermes/.venv/bin/python -c "import av, faster_whisper, numpy, sounddevice; print('hermes-agent[voice] OK', faster_whisper.__version__, av.__version__, numpy.__version__, sounddevice.__version__)"; \
     # Remove pip from the sealed Hermes venv after installing runtime deps.
     /opt/hermes/.venv/bin/python -m pip uninstall -y pip setuptools wheel || true; \
     rm -rf /opt/hermes/.venv/bin/pip /opt/hermes/.venv/bin/pip3 \
@@ -219,9 +225,13 @@ RUN --mount=type=cache,id=hermes-agent-apt-cache,target=/var/cache/apt,sharing=l
     chmod -R a+rX /opt/hermes/bundled; \
     \
     # --- Sanity checks ---
-    for cmd in git jq yq ffmpeg gh helm kubectl kustomize acli pre-commit; do \
+    for cmd in git jq yq ffmpeg espeak-ng gh helm kubectl kustomize acli pre-commit; do \
       command -v "${cmd}" >/dev/null 2>&1 || { echo "missing required tool: ${cmd}" >&2; exit 1; }; \
     done; \
+    ldconfig -p | grep -q 'libopus\.so\.0' \
+      || { echo "missing required library: libopus.so.0" >&2; exit 1; }; \
+    ldconfig -p | grep -q 'libportaudio\.so' \
+      || { echo "missing required library: libportaudio" >&2; exit 1; }; \
     command -v bb >/dev/null 2>&1 || command -v bbcli >/dev/null 2>&1 \
       || { echo "missing required tool: bb/bbcli" >&2; exit 1; }; \
     command -v opencode >/dev/null 2>&1 \

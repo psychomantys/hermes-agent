@@ -8,9 +8,9 @@ with extras for local speech-to-text, Cursor as a Hermes provider, and common CL
 
 | Area | Packages / tools |
 | --- | --- |
-| Local STT | `faster-whisper` in the Hermes venv; default `stt.provider: local` |
+| Voice | `hermes-agent[voice]` in the Hermes venv (`faster-whisper`, `av`, `sounddevice`, `numpy`); apt `portaudio19-dev`, `ffmpeg`, `libopus0`, `espeak-ng`; default `stt.provider: local` |
 | Cursor | Cursor Agent CLI (`agent` / `cursor-agent`), bundled `cursor-acp` + `cursor-subscription-directsdk` plugins |
-| CLIs | `acli`, `gh`, `jq`, `yq`, `bb`/`bbcli`, `git`, `helm`, `kustomize`, `kubectl`, `pre-commit`, `opencode`, `ffmpeg` (+ extra codecs when available) |
+| CLIs | `acli`, `gh`, `jq`, `yq`, `bb`/`bbcli`, `git`, `helm`, `kustomize`, `kubectl`, `pre-commit`, `opencode`, `ffmpeg` (+ extra codecs when available), `espeak-ng` |
 
 ## Build
 
@@ -51,9 +51,11 @@ docker exec -it hermes hermes chat --provider cursor-acp -m composer-2.5 -q 'Rep
 docker exec -it hermes hermes chat --provider cursor-subscription-directsdk -m composer-2.5 -q 'Reply with exactly: OK'
 ```
 
-## STT
+## Voice
 
-`faster-whisper` is preinstalled. Defaults (seeded once):
+`hermes-agent[voice]` is preinstalled (`faster-whisper`, `av`, `sounddevice`,
+`numpy`), along with PortAudio, ffmpeg, Opus, and espeak-ng. STT defaults
+(seeded once):
 
 ```yaml
 stt:
